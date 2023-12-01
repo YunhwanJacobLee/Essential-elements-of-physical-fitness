@@ -1,0 +1,287 @@
+%matplotlib inline
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+import pandas as pd
+import seaborn as sns
+
+# data splitting
+from sklearn.model_selection import train_test_split
+
+# data stanard
+from sklearn.preprocessing import StandardScaler
+
+# data modeling
+from sklearn.metrics import confusion_matrix, accuracy_score, roc_curve, classification_report
+from sklearn.metrics import roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn import metrics
+
+""" Class stratify """
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20, stratify = y, random_state = 42)
+
+print("*** Train Dataset ***")
+print(y_train.value_counts())
+print("\n*** Test Dataset ***")
+print('\n',y_test.value_counts())
+
+scaler = StandardScaler()
+scaler.fit(X_train)
+train_scaled = scaler.transform(X_train)
+test_scaled = scaler.transform(X_test)
+
+""" Over Sampling: Synthetic Minority Oversampling Technique (SMOTE) """
+from collections import Counter
+from imblearn.over_sampling import SMOTE  #SVMSMOTE !!
+
+sm = SMOTE(random_state=42)
+X_train_sm, y_train_sm = sm.fit_resample(train_scaled, y_train)
+
+print('Resampled dataset shape {}'.format(Counter(y_train_sm)))
+
+from sklearn.model_selection import cross_val_score
+import numpy as np
+
+num_epoch = 1000
+LR_coarse_hyperparameter_list = []
+
+""" Logistic Regressioin """
+for epoch in range(num_epoch):
+  C = np.random.uniform(0.01, 100)
+  max_iter = int(np.random.uniform(10, 1000))
+
+  LR_model = LogisticRegression(C = C, max_iter=max_iter,
+                                n_jobs=-1,
+                                random_state=42)
+
+  score = cross_val_score(LR_model, X_train_sm, y_train_sm, cv=5)
+  print("epoch = {0}, C = {1}, max_iter = {2}, score = {3:.5f}" \
+        .format(epoch, C, max_iter, score.mean()))
+
+  hyperparameter = {'C': C,
+                    'max_iter': max_iter,
+                    'score': score.mean()}
+
+  LR_coarse_hyperparameter_list.append(hyperparameter)
+
+print("\n***** Logistic Regression *****")
+LR_coarse_hyperparameter_list = pd.DataFrame.from_dict(LR_coarse_hyperparameter_list)
+LR_coarse_hyperparameter_list = LR_coarse_hyperparameter_list.sort_values("score", ascending=False)
+LR_coarse_hyperparameter_list.head(10)
+
+num_epoch = 1000
+SVM_coarse_hyperparameter_list = []
+
+""" SVM """
+for epoch in range(num_epoch):
+  C = np.random.uniform(0.01, 100)
+  gamma = np.random.uniform(0.01, 100)
+
+  SVM_model = SVC(C = C, gamma=gamma, random_state=42)
+
+  score = cross_val_score(SVM_model, X_train_sm, y_train_sm, cv=5)
+  print("epoch = {0}, C = {1}, gamma = {2}, score = {3:.5f}" \
+        .format(epoch, C, gamma, score.mean()))
+
+  hyperparameter = {'C': C,
+                    'gamma': gamma,
+                    'score': score.mean()}
+
+  SVM_coarse_hyperparameter_list.append(hyperparameter)
+
+print("\n***** SVM *****")
+SVM_coarse_hyperparameter_list = pd.DataFrame.from_dict(SVM_coarse_hyperparameter_list)
+SVM_coarse_hyperparameter_list = SVM_coarse_hyperparameter_list.sort_values("score", ascending=False)
+SVM_coarse_hyperparameter_list.head(10)
+
+num_epoch = 1000
+DT_coarse_hyperparameter_list = []
+
+num_epoch = 1000
+RF_coarse_hyperparameter_list = []
+
+""" Random Forest """
+for epoch in range(num_epoch):
+  n_estimators =  int(np.random.uniform(20, 150))
+  max_depth = int(np.random.uniform(1, 12))
+  max_features = np.random.uniform(0.1, 1.0)
+  min_samples_split = int(np.random.uniform(1, 40))
+  min_samples_leaf = int(np.random.uniform(1, 20))
+
+  RF_model = RandomForestClassifier(n_estimators=n_estimators,
+                                    max_depth=max_depth,
+                                    max_features=max_features,
+                                    min_samples_split=min_samples_split,
+                                    min_samples_leaf=min_samples_leaf,
+                                    n_jobs=-1,
+                                    random_state=42)
+
+  score = cross_val_score(RF_model, X_train_sm, y_train_sm, cv=5)
+  print("epoch = {0}, n_estimators = {1}, max_depth = {2}, max_features = {3}, min_samples_split = {4}, min_samples_leaf = {5}, score = {6:.5f}" \
+        .format(epoch, n_estimators, max_depth, max_features, min_samples_split, min_samples_leaf, score.mean()))
+
+  hyperparameter = {'n_estimators': n_estimators,
+                    'max_depth': max_depth,
+                    'max_features': max_features,
+                    'min_samples_split': min_samples_split,
+                    'min_samples_leaf': min_samples_leaf,
+                    'score': score.mean()}
+
+  RF_coarse_hyperparameter_list.append(hyperparameter)
+
+print("\n***** Random Forest *****")
+RF_coarse_hyperparameter_list = pd.DataFrame.from_dict(RF_coarse_hyperparameter_list)
+RF_coarse_hyperparameter_list = RF_coarse_hyperparameter_list.sort_values("score", ascending=False)
+RF_coarse_hyperparameter_list.head(10)
+
+num_epoch = 1000
+XGB_coarse_hyperparameter_list = []
+
+""" XGBoost """
+for epoch in range(num_epoch):
+  n_estimators =  int(np.random.uniform(20, 150))
+  max_depth = int(np.random.uniform(1, 12))
+  max_features = np.random.uniform(0.1, 1.0)
+
+  XGB_model = XGBClassifier(n_estimators=n_estimators,
+                                    max_depth=max_depth,
+                                    max_features=max_features,
+                                    n_jobs=-1,
+                                    random_state=42)
+
+  score = cross_val_score(XGB_model, X_train_sm, y_train_sm, cv=5)
+  print("epoch = {0}, n_estimators = {1}, max_depth = {2}, max_features = {3}, score = {4:.5f}" \
+        .format(epoch, n_estimators, max_depth, max_features, score.mean()))
+
+  hyperparameter = {'n_estimators': n_estimators,
+                    'max_depth': max_depth,
+                    'max_features': max_features,
+                    'score': score.mean()}
+
+  XGB_coarse_hyperparameter_list.append(hyperparameter)
+
+print("\n***** XGBoost *****")
+XGB_coarse_hyperparameter_list = pd.DataFrame.from_dict(XGB_coarse_hyperparameter_list)
+XGB_coarse_hyperparameter_list = XGB_coarse_hyperparameter_list.sort_values("score", ascending=False)
+XGB_coarse_hyperparameter_list.head(10)
+
+""" ANN """
+
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+import tensorflow as tf
+from tensorflow import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+import numpy
+from sklearn.metrics import f1_score
+
+cvscores = []
+conf = []
+f1 = []
+auc = []
+
+kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+
+for train, test in kfold.split(X_train_sm, y_train_sm):
+    model = Sequential()
+    model.add(Dense(units=10, activation='relu', input_shape=(15,)))
+    model.add(Dense(units=5, activation='sigmoid'))
+    model.add(Dense(units=1, activation='sigmoid'))
+    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    model.fit(X_train_sm, y_train_sm, epochs=200, batch_size=32)
+    scores = model.evaluate(X_test, y_test)
+    print(f'{model.metrics_names[1]}: {scores[1]*100:.2f}%')
+    cvscores.append(scores[1] * 100)
+
+    ANN_predict = model.predict(X_test)
+    ANN_predict = (ANN_predict>0.5)
+
+    ANN_acc_score = accuracy_score(y_test, ANN_predict)
+    ANN_auc_score = roc_auc_score(y_test, ANN_predict)
+    ANN_f1_score = f1_score(y_test, ANN_predict)
+    ANN_tn, ANN_fp, ANN_fn, ANN_tp = confusion_matrix(y_test, ANN_predict).ravel()
+    ANN_NPV = ANN_tn/(ANN_tn + ANN_fn)
+    ANN_PPV = ANN_tp/(ANN_tp + ANN_fp)
+    ANN_specificity = ANN_tn/(ANN_tn + ANN_fp)
+    ANN_sensitivity = ANN_tp/(ANN_tp + ANN_fn)
+    conf.append(ANN_conf_matrix)
+    auc.append(ANN_auc_score)
+    f1.append(ANN_f1_score)
+    print("\n***** Logistc Regression *****")
+    print("confussion matrix")
+    print(ANN_conf_matrix)
+    print("\n")
+    print("Accuracy of Logistic Regression:",ANN_acc_score*100,'\n')
+    print("ANN_auc_score")
+    print(ANN_auc_score)
+    print("\n")
+    print("NPV, PPV, Specificity")
+
+
+print(numpy.mean(cvscores), numpy.std(cvscores))
+
+avg_cm = np.mean(conf, axis=0)
+print(avg_cm)
+
+TN = avg_cm[0, 0]
+FP = avg_cm[0, 1]
+FN = avg_cm[1, 0]
+TP = avg_cm[1, 1]
+
+sensitivity = TP / (TP + FN)
+specificity = TN / (TN + FP)
+
+auc = np.mean(auc)
+f1 = np.mean(f1)
+print("accuracy", numpy.mean(cvscores), numpy.std(cvscores))
+print("AUC", auc)
+print("F1", f1)
+print("Specificity:", specificity)
+print("Sensitivity:", sensitivity)
+
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.metrics import classification_report
+
+elastic_net_classifier = LogisticRegressionCV(cv=5, penalty='elasticnet', l1_ratios=[0.1, 0.5, 0.9], solver='saga')
+EL_model = elastic_net_classifier.fit(X_train_sm, y_train_sm)
+
+#Elastic Model#
+from sklearn.linear_model import ElasticNet
+from sklearn.datasets import make_regression
+
+
+EL_predict = EL_model.predict(X_test)
+
+EL_conf_matrix = confusion_matrix(y_test, EL_predict)
+EL_acc_score = accuracy_score(y_test, EL_predict)
+EL_auc_score = roc_auc_score(y_test, EL_predict)
+EL_tn, EL_fp, EL_fn, EL_tp = confusion_matrix(y_test, EL_predict).ravel()
+EL_NPV = EL_tn/(EL_tn + EL_fn)
+EL_PPV = EL_tp/(EL_tp + EL_fp)
+EL_specificity = EL_tn/(EL_tn + EL_fp)
+EL_sensitivity = EL_tp/(EL_tp + EL_fn)
+EL_prob = EL_model.predict_proba(X_test)[:, 1]
+EL_fpr, EL_tpr, thresholds = roc_curve(y_test, EL_prob)
+print("\n***** Logistc Regression *****")
+print("confussion matrix")
+print(EL_conf_matrix)
+print("\n")
+print("Accuracy of Logistic Regression:",EL_acc_score*100,'\n')
+print(classification_report(y_test,EL_predict))
+print("EL_auc_score")
+print(EL_auc_score)
+print("\n")
+print("NPV, PPV, Specificity")
+print(EL_NPV)
+print(EL_PPV)
+print(EL_specificity)
+print(EL_sensitivity)
