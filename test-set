@@ -153,3 +153,73 @@ expected_value = explainer.expected_value
 shap_values = explainer(X_test)
 
 shap.summary_plot(shap_values, X_test)
+
+### ANN ###
+
+from sklearn.metrics import classification_report
+ANN_predict = model.predict(X_test)
+ANN_predict = (ANN_predict>0.5)
+
+
+ANN_conf_matrix = confusion_matrix(y_test, ANN_predict)
+ANN_acc_score = accuracy_score(y_test, ANN_predict)
+ANN_auc_score = roc_auc_score(y_test, ANN_predict)
+ANN_tn, ANN_fp, ANN_fn, ANN_tp = confusion_matrix(y_test, ANN_predict).ravel()
+ANN_NPV = ANN_tn/(ANN_tn + ANN_fn)
+ANN_PPV = ANN_tp/(ANN_tp + ANN_fp)
+ANN_specificity = ANN_tn/(ANN_tn + ANN_fp)
+ANN_sensitivity = ANN_tp/(ANN_tp + ANN_fn)
+print("\n***** Logistc Regression *****")
+print("confussion matrix")
+print(ANN_conf_matrix)
+print("\n")
+print("Accuracy of Logistic Regression:",ANN_acc_score*100,'\n')
+print(classification_report(y_test,ANN_predict))
+print("ANN_auc_score")
+print(ANN_auc_score)
+print("\n")
+print("NPV, PPV, Specificity")
+print(ANN_NPV)
+print(ANN_PPV)
+print(ANN_specificity)
+print(ANN_sensitivity)
+
+### elastic Net###
+
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.metrics import classification_report
+
+elastic_net_classifier = LogisticRegressionCV(cv=5, penalty='elasticnet', l1_ratios=[0.1, 0.5, 0.9], solver='saga')
+EL_model = elastic_net_classifier.fit(X_train_sm, y_train_sm)
+
+#Elastic Model#
+from sklearn.linear_model import ElasticNet
+from sklearn.datasets import make_regression
+
+
+EL_predict = EL_model.predict(X_test)
+
+EL_conf_matrix = confusion_matrix(y_test, EL_predict)
+EL_acc_score = accuracy_score(y_test, EL_predict)
+EL_auc_score = roc_auc_score(y_test, EL_predict)
+EL_tn, EL_fp, EL_fn, EL_tp = confusion_matrix(y_test, EL_predict).ravel()
+EL_NPV = EL_tn/(EL_tn + EL_fn)
+EL_PPV = EL_tp/(EL_tp + EL_fp)
+EL_specificity = EL_tn/(EL_tn + EL_fp)
+EL_sensitivity = EL_tp/(EL_tp + EL_fn)
+EL_prob = EL_model.predict_proba(X_test)[:, 1]
+EL_fpr, EL_tpr, thresholds = roc_curve(y_test, EL_prob)
+print("\n***** Logistc Regression *****")
+print("confussion matrix")
+print(EL_conf_matrix)
+print("\n")
+print("Accuracy of Logistic Regression:",EL_acc_score*100,'\n')
+print(classification_report(y_test,EL_predict))
+print("EL_auc_score")
+print(EL_auc_score)
+print("\n")
+print("NPV, PPV, Specificity")
+print(EL_NPV)
+print(EL_PPV)
+print(EL_specificity)
+print(EL_sensitivity)
