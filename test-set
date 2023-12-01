@@ -1,0 +1,155 @@
+# data splitting
+from sklearn.model_selection import train_test_split
+
+# data stanard
+from sklearn.preprocessing import StandardScaler
+
+# data modeling
+from sklearn.metrics import confusion_matrix, accuracy_score, roc_curve, classification_report
+from sklearn.metrics import roc_auc_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+from xgboost import XGBClassifier
+from sklearn import metrics
+
+from sklearn.model_selection import cross_val_score
+import numpy as np
+
+from sklearn.linear_model import LogisticRegressionCV
+from sklearn.metrics import classification_report
+
+from sklearn.linear_model import ElasticNet
+from sklearn.datasets import make_regression
+
+from sklearn.model_selection import cross_val_score
+import numpy as np
+from sklearn.model_selection import KFold
+
+import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+import tensorflow as tf
+from tensorflow import keras
+from keras.models import Sequential
+from keras.layers import Dense
+
+""" Class stratify """
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.20, stratify = y, random_state = 42)
+
+print("*** Train Dataset ***")
+print(y_train.value_counts())
+print("\n*** Test Dataset ***")
+print('\n',y_test.value_counts())
+
+""" Over Sampling: Synthetic Minority Oversampling Technique (SMOTE) """
+from collections import Counter
+from imblearn.over_sampling import SMOTE  #SVMSMOTE !!
+
+sm = SMOTE(random_state=42)
+X_train_sm, y_train_sm = sm.fit_resample(X_train, y_train)
+
+print('Resampled dataset shape {}'.format(Counter(y_train_sm)))
+
+## model
+LR = LogisticRegression()
+SVM = SVC()
+DT = DecisionTreeClassifier()
+RF = RandomForestClassifier()
+xgb = XGBClassifier()
+
+## Model Training
+LR_model = LR.fit(X_train_sm, y_train_sm)
+SVM_model = SVM.fit(X_train_sm, y_train_sm)
+DT_model = DT.fit(X_train_sm, y_train_sm)
+RF_model = RF.fit(X_train_sm, y_train_sm)
+XGB_model = xgb.fit(X_train_sm, y_train_sm)
+
+## (3) Model Prediction
+LR_predict = LR_model.predict(test_scaled)
+SVM_predict = SVM_model.predict(test_scaled)
+DT_predict = DT_model.predict(test_scaled)
+RF_predict = RF_model.predict(test_scaled)
+XGB_predict = XGB_model.predict(test_scaled)
+
+## (4) Model Evaluation
+LR_conf_matrix = confusion_matrix(y_test, LR_predict)
+LR_acc_score = accuracy_score(y_test, LR_predict)
+print("\n***** Logistc Regression *****")
+print("confussion matrix")
+print(LR_conf_matrix)
+print("\n")
+print("Accuracy of Logistic Regression:",LR_acc_score*100,'\n')
+print(classification_report(y_test,LR_predict))
+
+print("\n***** SVM *****")
+SVM_conf_matrix = confusion_matrix(y_test, SVM_predict)
+SVM_acc_score = accuracy_score(y_test, SVM_predict)
+print("confussion matrix")
+print(SVM_conf_matrix)
+print("\n")
+print("Accuracy of Support Vector Classifier:",SVM_acc_score*100,'\n')
+print(classification_report(y_test,SVM_predict))
+
+
+print("\n***** Decision Tree *****")
+DT_conf_matrix = confusion_matrix(y_test, DT_predict)
+DT_acc_score = accuracy_score(y_test, DT_predict)
+print("confussion matrix")
+print(DT_conf_matrix)
+print("\n")
+print("Accuracy of Decision Tree:",DT_acc_score*100,'\n')
+print(classification_report(y_test,DT_predict))
+
+
+print("\n***** Random Forest *****")
+RF_conf_matrix = confusion_matrix(y_test, RF_predict)
+RF_acc_score = accuracy_score(y_test, RF_predict)
+print("confussion matrix")
+print(RF_conf_matrix)
+print("\n")
+print("Accuracy of Random Forest:",RF_acc_score*100,'\n')
+print(classification_report(y_test,RF_predict))
+
+print("\n***** XGB *****")
+XGB_conf_matrix = confusion_matrix(y_test, XGB_predict)
+XGB_acc_score = accuracy_score(y_test, XGB_predict)
+print("confussion matrix")
+print(XGB_conf_matrix)
+print("\n")
+print("Accuracy of XGBoost:",XGB_acc_score*100,'\n')
+print(classification_report(y_test,XGB_predict))
+print("XGB_auc_score")
+
+### feature importance
+sports_label = ['BF', 'BW', 'BMI','GS (L)', 'GS (R)','GS (avg)','BMS', 'PU', 'SU', 'SLJ',
+                 'SJ', 'SS', 'BF', 'SR', 'EHC']
+
+importances = XGB_model.feature_importances_
+indices = np.argsort(importances)[::-1]
+
+names = [sports_label[i] for i in indices]
+width = 0.8
+# Print the feature ranking
+print("Feature ranking:")
+
+for f in range(X_test.shape[1]):
+    print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
+
+# Plot the impurity-based feature importances of the forest
+plt.figure(figsize=(10, 7))
+plt.barh(range(X_test.shape[1]), importances[indices],
+        color="tab:blue", align="center", height=0.8)
+plt.yticks(range(X_test.shape[1]), names)
+plt.ylim([X_test.shape[1], -1])
+plt.show()
+
+### SHAP value
+
+explainer = shap.Explainer(XGB_model)
+expected_value = explainer.expected_value
+shap_values = explainer(X_test)
+
+shap.summary_plot(shap_values, X_test)
